@@ -890,7 +890,8 @@ unit_now = TF_UNIT[tf_now]
 st.markdown(f"""
 <div class="hero">
   <h1>Trendline Breakout<span class="grad">Meta-Label ML</span></h1>
-  <div class="sub">A geometric primary signal, filtered by a <b>machine-learning meta-label</b>. Trendlines are fitted by
+  <div class="sub">Trendout Breakout Metal Label can be used to prevent implementation shortfall, adverse selection, and excessive slippage during volatile market breakouts.
+  A geometric primary signal, filtered by a <b>machine-learning meta-label</b>. Trendlines are fitted by
   pivot-anchored slope optimisation, breakouts are labelled by an <b>ATR triple barrier</b>, and a walk-forward random forest
   decides which breakouts to take — at the bar size you choose.</div>
   <div class="chips">
