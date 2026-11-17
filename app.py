@@ -562,6 +562,12 @@ def to_tf(df, tf):
     return resample_ohlc(df, tf)
 
 
+@st.cache_data(show_spinner=False)
+def preview_lines(win, lookback, step):
+    """Cached trendline fit for the Trendlines tab — no refit on every widget change."""
+    return trendline_pass(np.log(win["close"].to_numpy(dtype=float)), int(lookback), int(step))
+
+
 @st.cache_data(show_spinner="Preparing reference CSV…")
 def reference_csv(symbol):
     b, e = synth_pair()
@@ -859,7 +865,7 @@ with st.sidebar:
         tp = st.slider("TP × ATR", 0.5, 8.0, 3.0, step=0.5, key="w_tp")
     with cb:
         sl = st.slider("SL × ATR", 0.5, 8.0, 3.0, step=0.5, key="w_sl")
-    atrn = num_slider(f"ATR / volume lookback", max(lb, 3), max(lb + 1, min(400, max(4, n_win - 1))),
+    atrn = num_slider("ATR / volume lookback", max(lb, 3), max(lb + 1, min(400, max(4, n_win - 1))),
                       max(d["atr"], lb), "w_atr")
     tr = num_slider(f"Training window ({unit} bars)", 10, max(11, n_win - 2), d["train"], "w_train")
     stp = num_slider(f"Re-train every ({unit} bars)", 1, max(2, n_win // 2), d["step"], "w_step")
@@ -943,8 +949,7 @@ with tab_tl:
     if len(win) < cfg_now["lookback"] + 5:
         st.caption("Widen the years or shorten the lookback to populate this panel.")
     else:
-        with st.spinner("Fitting trendlines…"):
-            ln = trendline_pass(np.log(win["close"].to_numpy(float)), cfg_now["lookback"], cfg_now["line_step"])
+        ln = preview_lines(win, cfg_now["lookback"], cfg_now["line_step"])
         show_fig(price_lines_fig(win, ln, cfg_now["lookback"], tail), key="tl_price")
         show_fig(slope_fig(win, ln), key="tl_slope")
         st.caption("Resistance in red, support in green, both projected onto the current bar. "
@@ -952,11 +957,20 @@ with tab_tl:
         act = st.session_state.get("active")
         if act and act.get("trades") is not None and len(act["trades"]):
             tr = act["trades"]
-            k = st.selectbox("Inspect trade", list(tr.index), key="w_trade_i",
-                             format_func=lambda i: f"#{i} · {win.index[int(tr.loc[i,'entry_i')]:%Y-%m-%d %H:%M} · "
-                                                   f"P={fmt_n(tr.loc[i,'model_prob'],'{:.2f}')} · "
-                                                   f"{tr.loc[i,'exit_reason']}")
-            show_fig(trade_fig(win, tr.loc[k], cfg_now["lookback"]), key="tl_trade")
+            n_run = int((act.get("metrics") or {}).get("bars", -1))
+            if n_run != len(win):
+                st.caption("Re-run the strategy on the current window to inspect individual trades.")
+            else:
+                labels = {}
+                for i in tr.index:
+                    row = tr.loc[i]
+                    entry_time = win.index[int(row["entry_i"])]
+                    stamp = entry_time.strftime("%Y-%m-%d %H:%M")
+                    prob = fmt_n(row["model_prob"], "{:.2f}")
+                    labels[i] = f"#{i} · {stamp} · P={prob} · {row['exit_reason']}"
+                k = st.selectbox("Inspect trade", list(tr.index), key="w_trade_i",
+                                 format_func=lambda i: labels.get(i, str(i)))
+                show_fig(trade_fig(win, tr.loc[k], act["config"]["lookback"]), key="tl_trade")
 
 with tab_model:
     sec("M", "Meta-label diagnostics")
