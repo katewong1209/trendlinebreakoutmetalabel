@@ -15,7 +15,6 @@ Instead of naive pivot connecting, the engine fits a robust trendline via a two-
 2. **Pivot Identification**: Find the extreme point furthest from the line: $t_{pivot} = \arg\max_t (y_t - \hat{y}_t)$ for resistance (or $\arg\min$ for support).
 3. **Constrained Rotation**: The line is rotated around the pivot via numerical gradient descent with step-halving to minimize squared error, subject to the strict constraint that the line **never cuts through price**:
    $$ \text \sum_{t} (y_t - (\alpha + \beta x_t))^2 \quad \text{subject to} \quad y_t \le \alpha + \beta x_t \;\; \forall t \in \text $$
-
 ### 2. Triple Barrier Method (TBM)
 Labels are generated using TBM in log-ATR units, defining three exit conditions:
 - **Upper Barrier**: Take Profit at $m \times \text{ATR}$
